@@ -17,5 +17,7 @@ public class OrderResponseDto {
     private Long customerId;
     private OrderStatus status;
     private List<OrderItemResponseDto> items;
+    private Double totalAmount;
+
 
 }

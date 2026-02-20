@@ -1,6 +1,7 @@
 package com.example.ecom.dto.requestDto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -27,5 +28,6 @@ public class OrderRequestDto {
      * Must contain at least one item.
      */
     @Size(min = 1, message = "Order must contain at least one product")
+    @Valid
     private List<OrderItemRequestDto> items;
 }

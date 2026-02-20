@@ -9,8 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
 
-import java.util.List;
 
 /**
  * REST controller for managing products.
@@ -31,7 +31,7 @@ public class ProductController {
      * @return created product with HTTP 201 status
      */
 
-    @PostMapping("/products")
+    @PostMapping("/product")
     public ResponseEntity<ProductResponseDto> createProduct(@Valid @RequestBody ProductRequestDto productRequestDto) {
         return new ResponseEntity<>(productService.createProduct(productRequestDto), HttpStatus.CREATED);
     }
@@ -55,9 +55,13 @@ public class ProductController {
      */
 
     @GetMapping("/products")
-    public ResponseEntity<List<ProductResponseDto>> getAllProducts() {
-        return ResponseEntity.ok(productService.getAllProducts());
+    public ResponseEntity<Page<ProductResponseDto>> getAllProducts(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+
+        return ResponseEntity.ok(productService.getAllProducts(page, size));
     }
+
 
     /**
      * Updates a product by ID.

@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -43,9 +45,13 @@ public class CustomerController {
     }
 
     @GetMapping("/customers")
-    public ResponseEntity<List<CustomerResponseDto>> getAllCustomers() {
-        return ResponseEntity.ok(customerService.getAllCustomers());
+    public ResponseEntity<Page<CustomerResponseDto>> getAllCustomers(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+
+        return ResponseEntity.ok(customerService.getAllCustomers(page, size));
     }
+
 
     @PutMapping("/customer/{id}")
     public ResponseEntity<CustomerResponseDto> updateCustomer(

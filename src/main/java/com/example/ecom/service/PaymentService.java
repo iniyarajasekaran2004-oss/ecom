@@ -2,6 +2,8 @@ package com.example.ecom.service;
 
 import com.example.ecom.dto.requestDto.PaymentRequestDto;
 import com.example.ecom.dto.responseDto.PaymentResponseDto;
+import org.springframework.data.domain.Page;
+
 /**
  * Service interface for managing Payment operations.
  *
@@ -24,4 +26,5 @@ public interface PaymentService {
      */
 
     PaymentResponseDto getPaymentById(Long id);
+    Page<PaymentResponseDto> getAllPayments(int page, int size);
 }

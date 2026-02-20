@@ -1,5 +1,6 @@
 package com.example.ecom.dto.requestDto;
 
+import com.example.ecom.util.PaymentMethod;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -15,4 +16,8 @@ public class PaymentRequestDto {
      */
     @NotNull(message = "Order id is required")
     private Long orderId;
+
+    @NotNull(message = "Payment method should not be null")
+    private PaymentMethod paymentMethod;
+
 }

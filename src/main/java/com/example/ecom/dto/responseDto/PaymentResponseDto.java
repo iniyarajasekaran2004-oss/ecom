@@ -1,5 +1,6 @@
 package com.example.ecom.dto.responseDto;
 
+import com.example.ecom.util.PaymentMethod;
 import lombok.Builder;
 import lombok.Data;
 
@@ -15,5 +16,6 @@ public class PaymentResponseDto {
     private Long id;
     private Long orderId;
     private Double amount;
+    private PaymentMethod paymentMethod;
     private LocalDateTime paymentDate;
 }

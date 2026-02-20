@@ -2,12 +2,14 @@ package com.example.ecom.entity;
 
 import com.example.ecom.util.OrderStatus;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -45,7 +47,10 @@ public class Order {
     /**
      * List of items included in the order.
      */
+    @Builder.Default
     @OneToMany(mappedBy = "order", cascade = CascadeType.ALL)
+    private List<OrderItem> items= new ArrayList<>();
 
-    private List<OrderItem> items;
+    private Double totalAmount;
+
 }

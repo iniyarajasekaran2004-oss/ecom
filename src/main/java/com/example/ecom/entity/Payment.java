@@ -1,5 +1,6 @@
 package com.example.ecom.entity;
 
+import com.example.ecom.util.PaymentMethod;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -44,6 +45,10 @@ public class Payment {
      */
     @OneToOne
     @JoinColumn(name = "order_id", nullable = false, unique = true)
-
     private Order order;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentMethod paymentMethod;
+
 }

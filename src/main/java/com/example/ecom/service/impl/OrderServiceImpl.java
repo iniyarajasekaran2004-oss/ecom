@@ -7,7 +7,11 @@ import com.example.ecom.entity.Customer;
 import com.example.ecom.entity.Order;
 import com.example.ecom.entity.OrderItem;
 import com.example.ecom.entity.Product;
+import com.example.ecom.exception.InsufficientStockException;
+import com.example.ecom.exception.InvalidOrderStatusTransitionException;
 import com.example.ecom.exception.ResourceNotFoundException;
+import com.example.ecom.mapper.OrderItemMapper;
+import com.example.ecom.mapper.OrderMapper;
 import com.example.ecom.repository.CustomerRepository;
 import com.example.ecom.repository.OrderRepository;
 import com.example.ecom.repository.ProductRepository;
@@ -17,6 +21,9 @@ import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -39,6 +46,11 @@ public class OrderServiceImpl implements OrderService {
     private final OrderRepository orderRepository;
     private final CustomerRepository customerRepository;
     private final ProductRepository productRepository;
+    private final OrderMapper orderMapper;
+    private final OrderItemMapper orderItemMapper;
+
+
+
 
     /**
      * Creates a new order for a customer.
@@ -55,36 +67,68 @@ public class OrderServiceImpl implements OrderService {
     @Transactional
     public OrderResponseDto createOrder(OrderRequestDto orderRequestDto) {
         log.info("Creating Order for customer id: {}", orderRequestDto.getCustomerId());
+
+        Order order = orderMapper.toEntity(orderRequestDto);
+
         Customer customer = customerRepository.findById(orderRequestDto.getCustomerId())
-                .orElseThrow(() -> new ResourceNotFoundException("Customer not found with id: "
-                        + orderRequestDto.getCustomerId()));
-        Order order = Order.builder()
-                .customer(customer)
-                .status(OrderStatus.CREATED)
-                .build();
+                .orElseThrow(() ->{
+                    log.error("Customer not found with id: {}", orderRequestDto.getCustomerId());
+                    return new ResourceNotFoundException("Customer not found with id: "
+                        + orderRequestDto.getCustomerId());
+                });
+//        Order order = Order.builder()
+//                .customer(customer)
+//                .status(OrderStatus.CREATED)
+//                .build();
+
+        order.setCustomer(customer);
+        order.setStatus(CREATED);
+
         List<OrderItem> orderItems = orderRequestDto.getItems()
                 .stream()
                 .map(itemDto -> {
                     Product product = productRepository.findById(itemDto.getProductId())
-                            .orElseThrow(() -> new ResourceNotFoundException("Product not with id: " + itemDto.getProductId()));
+                            .orElseThrow(() ->{
+                                log.error("Product not found with id: {}", itemDto.getProductId());
+                                return new ResourceNotFoundException("Product not with id: " + itemDto.getProductId());
+                            });
 
                     if (product.getStock() < itemDto.getQuantity()) {
-                        throw new RuntimeException("Insufficient stock for product: " + product.getName());
+                        log.error("Insufficient stock for product: {}, Available: {}, Requested: {}",
+                                product.getName(), product.getStock(), itemDto.getQuantity());
+                        throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
                     }
 
                     //reduce stock
+                    log.debug("Reducing stock for product: {}. Old stock: {}, Quantity ordered: {}",
+                            product.getName(), product.getStock(), itemDto.getQuantity());
                     product.setStock(product.getStock() - itemDto.getQuantity());
-                    return OrderItem.builder()
-                            .order(order)
-                            .product(product)
-                            .quantity(itemDto.getQuantity())
-                            .build();
+
+                    OrderItem orderItem = orderItemMapper.toEntity(itemDto);
+
+                    orderItem.setOrder(order);
+                    orderItem.setProduct(product);
+                    orderItem.setPrice(product.getPrice());
+
+                    return orderItem;
                 })
+//                    return OrderItem.builder()
+//                            .order(order)
+//                            .product(product)
+//                            .quantity(itemDto.getQuantity())
+//                            .price(product.getPrice())
+//                            .build();
+//                })
                 .collect(Collectors.toList());
         order.setItems(orderItems);
+        double totalAmount = orderItems.stream()
+                .mapToDouble(item -> item.getPrice() * item.getQuantity())
+                .sum();
+
+        order.setTotalAmount(totalAmount);
         Order savedOrder = orderRepository.save(order);
         log.info("Order created successfully with id: {}", savedOrder.getId());
-        return mapToResponse(savedOrder);
+        return orderMapper.toDto(savedOrder);
 
     }
 
@@ -97,11 +141,14 @@ public class OrderServiceImpl implements OrderService {
      */
 
     @Override
+    @Transactional
     public OrderResponseDto getOrderById(Long id) {
         log.info("Fetching order with id: {}", id);
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
-        return mapToResponse(order);
+                .orElseThrow(() -> {log.error("Order not found with id: {}", id);
+                   return new ResourceNotFoundException("Order not found with id: " + id);
+                });
+        return orderMapper.toDto(order);
     }
 
     /**
@@ -110,13 +157,15 @@ public class OrderServiceImpl implements OrderService {
      * @return list of order response DTOs
      */
     @Override
-    public List<OrderResponseDto> getAllOrders() {
-        log.info("Fetching all orders");
-        return orderRepository.findAll()
-                .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+    public Page<OrderResponseDto> getAllOrders(int page, int size) {
+
+        Pageable pageable = PageRequest.of(page, size);
+        log.debug("Fetching orders with page: {}, size: {}", page, size);
+        Page<Order> orderPage = orderRepository.findAll(pageable);
+
+        return orderPage.map(orderMapper::toDto);
     }
+
 
     /**
      * Retrieves orders filtered by status.
@@ -129,7 +178,7 @@ public class OrderServiceImpl implements OrderService {
         log.info("Fetching orders with status: {}", status);
         return orderRepository.findByStatus(status)
                 .stream()
-                .map(this::mapToResponse)
+                .map(orderMapper::toDto)
                 .collect(Collectors.toList());
     }
 
@@ -151,11 +200,15 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + id));
         OrderStatus currentStatus = order.getStatus();
         if (!isValidTransition(currentStatus, status)) {
-            throw new IllegalStateException("Invalid status Transition from" + currentStatus + " to " + status);
+            log.error("Invalid status transition from {} to {} for order id: {}",
+                    currentStatus, status, id);
+            throw new InvalidOrderStatusTransitionException( currentStatus,status);
         }
+        log.debug("Order status changed from {} to {} for order id: {}",
+                currentStatus, status, id);
         order.setStatus(status);
         Order updated = orderRepository.save(order);
-        return mapToResponse(updated);
+        return orderMapper.toDto(updated);
     }
 
     /**
@@ -181,22 +234,23 @@ public class OrderServiceImpl implements OrderService {
      * @return mapped response DTO
      */
 
-    private OrderResponseDto mapToResponse(Order order) {
-        List<OrderItemResponseDto> items = order.getItems().stream()
-                .map(item -> OrderItemResponseDto.builder()
-                        .productId(item.getProduct().getId())
-                        .productName(item.getProduct().getName())
-                        .quantity(item.getQuantity())
-                        .price(item.getQuantity() * item.getProduct().getPrice())
-                        .build())
-                .collect(Collectors.toList());
-        return OrderResponseDto.builder()
-                .orderId(order.getId())
-                .customerId(order.getCustomer().getId())
-                .status(order.getStatus())
-                .items(items)
-                .build();
-
-    }
+//    private OrderResponseDto mapToResponse(Order order) {
+//        List<OrderItemResponseDto> items = order.getItems().stream()
+//                .map(item -> OrderItemResponseDto.builder()
+//                        .productId(item.getProduct().getId())
+//                        .productName(item.getProduct().getName())
+//                        .quantity(item.getQuantity())
+//                        .price(item.getQuantity() * item.getPrice())
+//                        .build())
+//                .collect(Collectors.toList());
+//        return OrderResponseDto.builder()
+//                .orderId(order.getId())
+//                .customerId(order.getCustomer().getId())
+//                .status(order.getStatus())
+//                .items(items)
+//                .totalAmount(order.getTotalAmount())
+//                .build();
+//
+//    }
 
 }

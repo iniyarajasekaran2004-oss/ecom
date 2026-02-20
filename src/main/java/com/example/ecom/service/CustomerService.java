@@ -3,7 +3,7 @@ package com.example.ecom.service;
 import com.example.ecom.dto.requestDto.CustomerRequestDto;
 import com.example.ecom.dto.responseDto.CustomerResponseDto;
 
-
+import org.springframework.data.domain.Page;
 import java.util.List;
 
 /**
@@ -34,7 +34,8 @@ public interface CustomerService {
      *
      * @return list of customer response DTOs
      */
-    List<CustomerResponseDto> getAllCustomers();
+
+    Page<CustomerResponseDto> getAllCustomers(int page, int size);
 
     /**
      * Updates an existing customer.

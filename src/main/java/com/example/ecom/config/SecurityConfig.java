@@ -10,6 +10,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.beans.factory.annotation.Value;
 
 
 /**
@@ -20,6 +21,12 @@ import org.springframework.security.web.SecurityFilterChain;
  */
 @Configuration
 public class SecurityConfig {
+    @Value("${app.security.admin.username}")
+    private String adminUsername;
+
+    @Value("${app.security.admin.password}")
+    private String adminPassword;
+
     /**
      * Configures HTTP security rules.
      *
@@ -55,12 +62,12 @@ public class SecurityConfig {
      */
     @Bean
     public InMemoryUserDetailsManager userDetailsService(PasswordEncoder encoder) {
-        UserDetails user = User.builder()
-                .username("admin")
-                .password(encoder.encode("password"))
-                .roles("USER")
+        UserDetails admin = User.builder()
+                .username(adminUsername)
+                .password(encoder.encode(adminPassword))
+                .roles("ADMIN")
                 .build();
-        return new InMemoryUserDetailsManager(user);
+        return new InMemoryUserDetailsManager(admin);
     }
 
     /**

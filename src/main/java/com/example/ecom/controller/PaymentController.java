@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.web.bind.annotation.RequestParam;
 
 /**
  * REST controller for managing payments.
@@ -29,8 +31,8 @@ public class PaymentController {
      * @return created payment response with HTTP 201 status
      */
 
-    @PostMapping("/Payment")
-    public ResponseEntity<?> makePayment(
+    @PostMapping("/payment")
+    public ResponseEntity<PaymentResponseDto> makePayment(
             @Valid @RequestBody PaymentRequestDto paymentRequestDto) {
         return new ResponseEntity<>(
                 paymentService.makePayment(paymentRequestDto),
@@ -43,10 +45,18 @@ public class PaymentController {
      * @param id payment ID
      * @return payment response
      */
-    @GetMapping("/Payment/{id}")
+    @GetMapping("/payment/{id}")
     public ResponseEntity<PaymentResponseDto> getPaymentById(@PathVariable Long id) {
         return ResponseEntity.ok(paymentService.getPaymentById(id));
     }
+    @GetMapping("/payments")
+    public ResponseEntity<Page<PaymentResponseDto>> getAllPayments(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+
+        return ResponseEntity.ok(paymentService.getAllPayments(page, size));
+    }
+
 
 
 }

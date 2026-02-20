@@ -2,6 +2,7 @@ package com.example.ecom.service;
 
 import com.example.ecom.dto.requestDto.ProductRequestDto;
 import com.example.ecom.dto.responseDto.ProductResponseDto;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -33,7 +34,7 @@ public interface ProductService {
      *
      * @return list of product response DTOs
      */
-    List<ProductResponseDto> getAllProducts();
+    Page<ProductResponseDto> getAllProducts(int page, int size);
 
     /**
      * Updates an existing product.

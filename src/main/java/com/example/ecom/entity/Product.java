@@ -5,6 +5,9 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+
+import java.util.List;
+
 /**
  * Entity representing a product available in the system.
  * Maps to the "Products" table in the database.
@@ -32,5 +35,8 @@ public class Product {
 
     @Column(nullable = false)
     private Double price;
+
+    @OneToMany(mappedBy = "product")
+    private List<OrderItem> orderItems;
 
 }

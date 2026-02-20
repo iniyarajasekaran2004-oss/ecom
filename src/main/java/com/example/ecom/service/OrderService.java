@@ -3,7 +3,7 @@ package com.example.ecom.service;
 import com.example.ecom.dto.requestDto.OrderRequestDto;
 import com.example.ecom.dto.responseDto.OrderResponseDto;
 import com.example.ecom.util.OrderStatus;
-
+import org.springframework.data.domain.Page;
 import java.util.List;
 
 /**
@@ -34,8 +34,8 @@ public interface OrderService {
      *
      * @return list of order response DTOs
      */
-    List<OrderResponseDto> getAllOrders();
 
+    Page<OrderResponseDto> getAllOrders(int page, int size);
     /**
      * Retrieves orders filtered by status.
      *

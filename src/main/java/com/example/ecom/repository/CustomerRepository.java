@@ -33,4 +33,6 @@ public interface CustomerRepository extends JpaRepository<Customer, Long> {
      * @return true if a customer exists, otherwise false
      */
     boolean existsByEmail(@NotBlank(message = "Email should not be blank") String email);
+
+
 }

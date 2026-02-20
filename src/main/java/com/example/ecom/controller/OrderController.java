@@ -13,6 +13,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.data.domain.Page;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
@@ -40,7 +42,7 @@ public class OrderController {
      * @return created order with HTTP 201 status
      */
 
-    @PostMapping("/Orders")
+    @PostMapping("/order")
     public ResponseEntity<?> createOrder(
             @Valid @RequestBody OrderRequestDto orderRequestDto) {
         return new ResponseEntity<>(
@@ -54,9 +56,13 @@ public class OrderController {
      * @return list of orders
      */
     @GetMapping("/orders")
-    public ResponseEntity<List<OrderResponseDto>> getAllOrders() {
-        return ResponseEntity.ok(orderService.getAllOrders());
+    public ResponseEntity<Page<OrderResponseDto>> getAllOrders(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "5") int size) {
+
+        return ResponseEntity.ok(orderService.getAllOrders(page, size));
     }
+
     /**
      * Retrieves an order by ID.
      */
@@ -70,7 +76,7 @@ public class OrderController {
      * @param status order status
      * @return list of orders with given status
      */
-    @GetMapping("/Orders/status/{status}")
+    @GetMapping("/order/status/{status}")
     public ResponseEntity<List<OrderResponseDto>> getOrdersBystatus(
             @PathVariable OrderStatus status) {
         return ResponseEntity.ok(orderService.getOrdersByStatus(status));
@@ -83,7 +89,7 @@ public class OrderController {
      * @param status new order status
      * @return updated order response
      */
-    @PatchMapping("/Order/{id}/status")
+    @PatchMapping("/order/{id}/status")
     public ResponseEntity<OrderResponseDto> updateStatus(
             @PathVariable Long id,
             @RequestParam OrderStatus status) {
